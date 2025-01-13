@@ -2,12 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <termios.h>
+#include <sys/select.h>
 #include "FigureManager.h"
 
 
-#define BOARD_WIDTH 7
-#define BOARD_HEIGHT 10
-#define PROG_TICK 500000
+#define BOARD_WIDTH 13
+#define BOARD_HEIGHT 25
+#define PROG_TICK 400000
 
 typedef struct {
     char **game_board;
@@ -123,7 +125,7 @@ void write_figure(game_state_t *game_state){
 void prep_new_figure(game_state_t *game_state){
     generate_new_figure(game_state->active_figure);
     game_state->figure_y = 0;
-    game_state->figure_x = rand() % (3 + 1); 
+    game_state->figure_x = rand() % (5 + 1); 
 }
 
 
@@ -139,6 +141,58 @@ void drop_figure(game_state_t *game_state) {
         update_board(game_state);
 }
 
+void on_left_arrow(game_state_t *game_state) {
+   clear_figure(game_state);
+   if (game_state->figure_x > 0){game_state->figure_x--;}
+   update_board(game_state);
+}
+
+void on_right_arrow(game_state_t *game_state) {
+    clear_figure(game_state);
+    if (game_state->figure_x < BOARD_WIDTH){game_state->figure_x++;}
+    update_board(game_state);
+}
+void on_space_press(game_state_t *game_state) {
+    clear_figure(game_state);
+    rotate_figure(game_state->active_figure);
+    update_board(game_state);
+}
+
+int get_keypress_nonblocking() {
+    struct timeval timeout;
+    fd_set readfds;
+
+    timeout.tv_sec = 0; 
+    timeout.tv_usec = 0; 
+
+    FD_ZERO(&readfds);
+    FD_SET(STDIN_FILENO, &readfds);
+
+    if (select(STDIN_FILENO + 1, &readfds, NULL, NULL, &timeout) > 0) {
+        char ch;
+        if (read(STDIN_FILENO, &ch, 1) == 1) {
+            return ch;
+        }
+    }
+    return 0;
+}
+
+void set_terminal_mode() {
+    struct termios new_settings;
+    tcgetattr(STDIN_FILENO, &new_settings);
+    new_settings.c_lflag &= ~ICANON;          
+    new_settings.c_lflag &= ~ECHO;            
+    tcsetattr(STDIN_FILENO, TCSANOW, &new_settings);  
+}
+
+void restore_terminal_mode() {
+    struct termios old_settings;
+    tcgetattr(STDIN_FILENO, &old_settings);  
+    old_settings.c_lflag |= ICANON;           
+    old_settings.c_lflag |= ECHO;          
+    tcsetattr(STDIN_FILENO, TCSANOW, &old_settings); 
+}
+
 int main() {
     game_state_t game_state;
     game_state.figure_x = 3;
@@ -146,12 +200,38 @@ int main() {
     initialize_figure(&game_state);
     initialize_board(&game_state);
     
-    while (1)
-    {
-        drop_figure(&game_state);
-        usleep(PROG_TICK);   
+    set_terminal_mode();
+
+    char ch;
+    int drop_counter = 0;
+
+    while (1) {
+        ch = get_keypress_nonblocking();
+
+        if (ch) { 
+            switch (ch) {
+                case 67: 
+                    on_right_arrow(&game_state);
+                    break;
+                case 68:  
+                    on_left_arrow(&game_state);
+                    break;
+                case 32: 
+                    on_space_press(&game_state);
+                    break;
+            }
+        }
+
+        if (drop_counter >= PROG_TICK / 1000) { 
+            drop_figure(&game_state);
+            drop_counter = 0; 
+        }
+
+        usleep(1000);
+        drop_counter++;
     }
-    
+
     free_game(&game_state);
+    restore_terminal_mode();
     return 0;
 }
