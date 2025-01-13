@@ -65,24 +65,26 @@ void display_figure(game_state_t *game_state){
             int y_pos = game_state->figure_y + i; 
             int x_pos = game_state->figure_x + j;
 
-            if (y_pos >= 0 && y_pos < BOARD_HEIGHT && x_pos >= 0 && x_pos < BOARD_WIDTH) {
-                if (y_pos == BOARD_HEIGHT-1 && game_state->active_figure[i][j] == '*') {
-                    write_figure(game_state);
-                    prep_new_figure(game_state);
-                    return;
-                } else if (game_state->game_board[y_pos][x_pos] == '#' && game_state->active_figure[i][j] == '*') {
+            if (y_pos < 0 || x_pos < 0 ) {
+                printf("Out of bounds\n");
+                free_game(game_state);
+                exit(1);
+            }
+
+            if (y_pos < BOARD_HEIGHT && x_pos < BOARD_WIDTH) {
+                if (game_state->game_board[y_pos][x_pos] == '#' && game_state->active_figure[i][j] == '*') {
                     clear_figure(game_state);
                     game_state->figure_y--;
                     write_figure(game_state);
                     prep_new_figure(game_state);
                     return;
-                }  else if (game_state->game_board[y_pos][x_pos] == ' ') {
+                } else if (y_pos == BOARD_HEIGHT-1 && game_state->active_figure[i][j] == '*') {
+                    write_figure(game_state);
+                    prep_new_figure(game_state);
+                    return;
+                } else if (game_state->game_board[y_pos][x_pos] == ' ') {
                     game_state->game_board[y_pos][x_pos] = game_state->active_figure[i][j];
                 }
-            } else {
-                printf("Out of bounds\n");
-                free_game(game_state);
-                exit(1);
             }
         }
     }
