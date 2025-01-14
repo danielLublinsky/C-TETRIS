@@ -6,13 +6,13 @@
 
 #define MAX_FIGURE_WIDTH 3
 #define MAX_FIGURE_HEIGHT 3
-
+#define TEMPLATE_COUNT 10
 typedef struct {
     char **figure_grid;
     int hight, width;
 } active_figure_t;
 
-const char figure_templates[3][MAX_FIGURE_HEIGHT][MAX_FIGURE_WIDTH] = {
+const char figure_templates[TEMPLATE_COUNT][MAX_FIGURE_HEIGHT][MAX_FIGURE_WIDTH] = {
     {
         {'*', '*', ' '},
         {'*', ' ', ' '},
@@ -27,6 +27,41 @@ const char figure_templates[3][MAX_FIGURE_HEIGHT][MAX_FIGURE_WIDTH] = {
         {'*', '*', '*'},
         {' ', ' ', ' '},
         {' ', ' ', ' '}
+    },
+    {
+        {' ', '*', '*'},
+        {'*', '*', ' '},
+        {' ', ' ', ' '}
+    },
+    {
+        {'*', '*', ' '},
+        {' ', '*', '*'},
+        {' ', ' ', ' '}
+    },
+    {
+        {'*', '*', ' '},
+        {'*', ' ', ' '},
+        {' ', ' ', ' '}
+    },
+    {
+        {'*', '*', ' '},
+        {'*', '*', ' '},
+        {' ', ' ', ' '}
+    },
+    {
+        {'*', '*', '*'},
+        {'*', ' ', '*'},
+        {' ', ' ', ' '}
+    },
+    {
+        {' ', '*', ' '},
+        {'*', '*', '*'},
+        {' ', '*', ' '}
+    },
+    {
+        {' ', '*', ' '},
+        {'*', '*', ' '},
+        {' ', '*', ' '}
     }
 };
 
@@ -40,7 +75,7 @@ void initialize_figure(active_figure_t *active_figure) {
 }
 
 void generate_new_figure(char **figure) {
-    int template_index = rand() % (2 + 1);
+    int template_index = rand() % (TEMPLATE_COUNT);
     for (int i = 0; i < MAX_FIGURE_HEIGHT; i++) {
         for (int j = 0; j < MAX_FIGURE_WIDTH; j++) {
             figure[i][j] = figure_templates[template_index][i][j];

@@ -10,6 +10,7 @@
 #define BOARD_WIDTH 13
 #define BOARD_HEIGHT 25
 #define PROG_TICK 400000
+#define FAST_DROP_TICK 80000
 
 typedef struct {
     char **game_board;
@@ -48,28 +49,6 @@ void print_board(game_state_t *game_state) {
     }
 }
 
-void clear_full_rows(game_state_t *game_state) {
-    for (int i = 0; i < BOARD_HEIGHT; i++) {
-        int charCount = 0;
-        for (int j = 0; j < BOARD_WIDTH; j++) {
-            if (game_state->game_board[i][j] != ' ') {
-                charCount++;
-            }
-        }
-        if (charCount == BOARD_WIDTH) {
-            for (int y = i; y > 0; y--) {
-                for (int x = 0; x < BOARD_WIDTH; x++) {
-                    game_state->game_board[y][x] = game_state->game_board[y - 1][x];
-                }
-            }
-            
-            for (int x = 0; x < BOARD_WIDTH; x++) {
-                game_state->game_board[0][x] = ' ';
-            }
-        }
-    }
-}
-
 int check_collision(game_state_t *game_state) {
     for (int i = 0; i < game_state->active_figure->hight; i++) {
         for (int j = 0; j < game_state->active_figure->width; j++) {
@@ -81,7 +60,7 @@ int check_collision(game_state_t *game_state) {
                     return 1;
                 }
             } else if (y_pos >= 0 && game_state->active_figure->figure_grid[i][j] == '*' && game_state->game_board[y_pos][x_pos] == '#') {
-                return 1; 
+                return 1;
             }
         }
     }
@@ -180,6 +159,10 @@ void on_right_arrow(game_state_t *game_state) {
     update_board(game_state);
 }
 
+void on_down_arrow(game_state_t *game_state, int *tick_speed) {
+    *tick_speed = FAST_DROP_TICK;
+}
+
 void on_space_press(game_state_t *game_state) {
     clear_figure(game_state);
     rotate_figure(game_state->active_figure->figure_grid);
@@ -193,6 +176,28 @@ void on_space_press(game_state_t *game_state) {
     }
 
     update_board(game_state);
+}
+
+void clear_full_rows(game_state_t *game_state) {
+    for (int i = 0; i < BOARD_HEIGHT; i++) {
+        int charCount = 0;
+        for (int j = 0; j < BOARD_WIDTH; j++) {
+            if (game_state->game_board[i][j] != ' ') {
+                charCount++;
+            }
+        }
+        if (charCount == BOARD_WIDTH) {
+            for (int y = i; y > 0; y--) {
+                for (int x = 0; x < BOARD_WIDTH; x++) {
+                    game_state->game_board[y][x] = game_state->game_board[y - 1][x];
+                }
+            }
+            
+            for (int x = 0; x < BOARD_WIDTH; x++) {
+                game_state->game_board[0][x] = ' ';
+            }
+        }
+    }
 }
 
 int get_keypress_nonblocking() {
@@ -244,6 +249,7 @@ int main() {
 
     char ch;
     int drop_counter = 0;
+    int tick_speed = PROG_TICK;
 
     while (1) {
         ch = get_keypress_nonblocking();
@@ -256,15 +262,19 @@ int main() {
                 case 68:
                     on_left_arrow(&game_state);
                     break;
+                case 66:
+                    on_down_arrow(&game_state, &tick_speed);
+                    break;
                 case 32:
                     on_space_press(&game_state);
                     break;
             }
         }
 
-        if (drop_counter >= PROG_TICK / 1000) {
+        if (drop_counter >= tick_speed / 1000) {
             drop_figure(&game_state);
             drop_counter = 0;
+            tick_speed = PROG_TICK;
         }
 
         usleep(1000);
